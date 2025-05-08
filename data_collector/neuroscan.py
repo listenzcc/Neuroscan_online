@@ -188,7 +188,7 @@ class Client(BasicClient):
     @logger.catch
     def fetch_data(self, length: float = 1.0):
         # How many packages are required
-        n = length / self.seconds_per_package
+        n = int(length / self.seconds_per_package + 1)
         if n > self.n:
             logger.warning(f'Not have enough data: {self.n} < {n}')
         return np.concatenate(self.data[-n:], axis=0)

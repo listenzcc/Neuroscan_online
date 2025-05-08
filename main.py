@@ -33,14 +33,13 @@ class StopWatch:
     total: float = 100
 
 
-client_kwargs = dict(
-    host='192.168.31.79',
-    port=4000
-)
-
 # %% ---- 2025-05-08 ------------------------
 # Play ground
 if __name__ == '__main__':
+    client_kwargs = dict(
+        host='192.168.31.79',
+        port=4000
+    )
     client = Client(**client_kwargs)
     client.start_receiving_thread()
 
@@ -49,7 +48,7 @@ if __name__ == '__main__':
         time.sleep(sw.interval)
         data = client.fetch_data(sw.window_length)
         # TODO: Do something with the data.
-        print(data)
+        print(data.shape)
 
     # Wait for enter to be pressed.
     input('Press Enter to Escape.')
