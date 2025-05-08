@@ -1,6 +1,7 @@
 __pycache__
 log
 .idea
+.vscode
 Algorithm
 ffmpeg*
 Model_parameters

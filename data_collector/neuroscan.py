@@ -44,7 +44,7 @@ class BasicClient:
     packages_per_second: int = 25
     # How many seconds do the package span.
     seconds_per_package: float = 1/packages_per_second
-    timeout: float = 10  # Seconds
+    timeout: float = 1  # Seconds
 
     basicInfoType = np.dtype([
         ('dwSize', np.uint32),
@@ -88,12 +88,22 @@ class BasicClient:
 class Client(BasicClient):
     socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
-    def __init__(self):
+    def __init__(self, **kwargs):
         super().__init__()
-        self.connect()
+        for k, v in kwargs.items():
+            if hasattr(self, k):
+                setattr(self, k, v)
+                logger.info(f'Set {k}={v}')
+
+        try:
+            self.connect()
+        except TimeoutError as err:
+            logger.exception(err)
+            logger.error(f'Can not connect to server {self.host}:{self.port}.')
+            raise err
+
         logger.info(f'Initialize {self}')
 
-    @logger.catch
     def connect(self):
         ''' Connect to the server. '''
         self.socket.settimeout(self.timeout)
@@ -118,7 +128,6 @@ class Client(BasicClient):
             self._recv_thread.join()
         logger.info('Stopped receiving.')
 
-    @logger.catch
     def receiving_loop(self):
         try:
             # ----------------------------------------
@@ -156,6 +165,8 @@ class Client(BasicClient):
                 self.data.append(matrix)
                 self.times.append(time.time())
                 self.n += 1
+                if self.n % 1000 == 0:
+                    self.report_current_data_length()
                 time.sleep(0.001)
 
             self._send_command(
@@ -169,6 +180,18 @@ class Client(BasicClient):
             self._send_command(self.commandDict['Closing_Up_Connection'])
             logger.info('Closed connection')
             return
+
+    def report_current_data_length(self):
+        logger.debug(
+            f'Data length: {self.n} | {self.n * self.seconds_per_package:0.2f} seconds.')
+
+    @logger.catch
+    def fetch_data(self, length: float = 1.0):
+        # How many packages are required
+        n = length / self.seconds_per_package
+        if n > self.n:
+            logger.warning(f'Not have enough data: {self.n} < {n}')
+        return np.concatenate(self.data[-n:], axis=0)
 
     @logger.catch
     def receive_single(self):
