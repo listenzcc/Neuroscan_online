@@ -16,7 +16,7 @@ switch = True
 
 div = 5033.1648/1e6
 t = 1  # 每过多少秒调用一次算法
-windowLength = 4#60  # 每次获取的数据长度（秒）
+windowLength = 4  # 60  # 每次获取的数据长度（秒）
 
 state_predictor = Attention_Vigilance_Workload_Algorithm(step=windowLength)
 acc_predictor = State_Acc_Regression_Algorithm(step=windowLength)
@@ -26,7 +26,8 @@ EYE_feature_extraction_algorithm = EYE_Feature_Algorithm(step=windowLength)
 
 infos = {'connection_info': {'IP': server_host, 'port': str(server_port)}}
 my_buffer = Buffer(nchan=channel_num, windowLength=windowLength, srate=1000)
-my_buffer.on(infos['connection_info']['IP'], int(infos['connection_info']['port']))
+my_buffer.on(infos['connection_info']['IP'],
+             int(infos['connection_info']['port']))
 my_buffer.start()
 
 # key_thread.start()
@@ -37,9 +38,10 @@ cur_time = time.time()
 #     data = data_r_cnt[:, i*4000:(i+1)*4000]
 #     data = np.concatenate([data, np.zeros((1, 4000))], axis=0)
 time.sleep(2)
-i=0
+i = 0
 while switch:
     while time.time() - cur_time < t:
+        time.sleep(0.001)
         continue
     cur_time = time.time()
     # print(cur_time)
@@ -48,19 +50,24 @@ while switch:
     # data_save = np.concatenate([data_save, data], axis=1)
 
     # EEG_data:
-    EEG_features, EOG_features = EEG_feature_extraction_algorithm.feature_extraction(data[:65, :])
+    EEG_features, EOG_features = EEG_feature_extraction_algorithm.feature_extraction(
+        data[:65, :])
 
     # EYE_data: 'Gaze point X', 'Gaze point Y', 'Pupil diameter left', 'Pupil diameter right', 'Location'
-    EYE_features = EYE_feature_extraction_algorithm.feature_extraction(data[65:, :])
+    EYE_features = EYE_feature_extraction_algorithm.feature_extraction(
+        data[65:, :])
 
     # Input_features = np.concatenate([EEG_features, EOG_features, EYE_features], axis=1)
-    attention_predict_label, vigilance_predict_label, workload_predict_label = state_predictor.algorithm(EEG_features, EOG_features, EYE_features)
-    acc_predict_label = acc_predictor.algorithm(attention_predict_label, vigilance_predict_label, workload_predict_label)
+    attention_predict_label, vigilance_predict_label, workload_predict_label = state_predictor.algorithm(
+        EEG_features, EOG_features, EYE_features)
+    acc_predict_label = acc_predictor.algorithm(
+        attention_predict_label, vigilance_predict_label, workload_predict_label)
 
     # input: attention, vigilance, workload, acc, 环境，任务紧急程度
     environmental_condition = 1
     task_urgency = 1
-    speed = fuzzy_inference_test.run([attention_predict_label, vigilance_predict_label, workload_predict_label, acc_predict_label, environmental_condition, task_urgency])
+    speed = fuzzy_inference_test.run([attention_predict_label, vigilance_predict_label,
+                                     workload_predict_label, acc_predict_label, environmental_condition, task_urgency])
 
     # alertor.alarm(i, result)
     # result = np.concatenate([result, data[-1:,:1], np.array([[cur_time]])], axis=1)
